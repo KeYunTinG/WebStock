@@ -6,7 +6,7 @@ namespace WebStock.Common
 {
     public class WebCrawler : IWebCrawler
     {
-        public async Task<decimal> GetStockPrice(string stockID)
+        public async Task<decimal> 爬取股價(string stockID)
         {
             var url = $"https://tw.stock.yahoo.com/quote/{stockID}";
 

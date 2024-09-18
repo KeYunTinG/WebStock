@@ -4,7 +4,7 @@ namespace WebStock.Service
 {
     public interface IStockService
     {
-        Task<StockTWModel> GetStock();
-        Task<decimal> GetDividend(int StockID, int Year);
+        Task<StockTWModel> 取得所有股票();
+        Task<decimal> 取得個別股票利息(int StockID, int Year);
     }
 }

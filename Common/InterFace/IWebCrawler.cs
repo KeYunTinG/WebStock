@@ -2,6 +2,6 @@
 {
     public interface IWebCrawler
     {
-        Task<decimal> GetStockPrice(string stockID);
+        Task<decimal> 爬取股價(string stockID);
     }
 }

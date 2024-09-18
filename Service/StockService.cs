@@ -1,23 +1,15 @@
 ﻿using System.Data.SqlClient;
 using Dapper;
 using WebStock.Common.InterFace;
-using WebStock.Models;
 using WebStock.Models.Interface;
 
 namespace WebStock.Service
 {
-    public class StockService : IStockService
+    public class StockService(IConfiguration _configuration, IWebCrawler _webCrawler) : IStockService
     {
-        private readonly string? _conn;
-        private readonly IWebCrawler _webCrawler;
-        public StockService(IConfiguration configuration, IWebCrawler WebCrawler)
+        public async Task<StockTWModel> 取得所有股票()
         {
-            _conn = configuration.GetConnectionString("DB");
-            _webCrawler = WebCrawler;
-        }
-        public async Task<StockTWModel> GetStock()
-        {
-            using (var connection = new SqlConnection(_conn))
+            using (var connection = new SqlConnection(_configuration.GetConnectionString("DB")))
             {
                 string query = "SELECT tw.ID, tw.Code, tw.Name,twOrder.Inventory, twOrder.BuyingTime, twOrder.SellingTime  FROM TW tw INNER JOIN TWOrder twOrder ON tw.ID = twOrder.StockID";
                 var stocks = await connection.QueryAsync<StockTWData>(query);
@@ -27,10 +19,11 @@ namespace WebStock.Service
 
                 foreach (var stock in stocks)
                 {
-                    var stockPrice = await _webCrawler.GetStockPrice(stock.Code);
+                    var stockPrice = await _webCrawler.爬取股價(stock.Code);
 
                     total += stock.Inventory * stockPrice;
-                    dividendTotal += await GetDividend(stock.ID, 2024);
+                    //取得當年度
+                    dividendTotal += await 取得個別股票利息(stock.ID, 2024);
 
                     stockViewModels.Add(new StockTW
                     {
@@ -40,7 +33,7 @@ namespace WebStock.Service
                         Inventory = stock.Inventory,
                         StockPrice = stockPrice,
                         Value = stock.Inventory * stockPrice,
-                        Dividend = await GetDividend(stock.ID,2024),
+                        Dividend = await 取得個別股票利息(stock.ID,2024),
                     });
                 }
 
@@ -52,15 +45,15 @@ namespace WebStock.Service
                 };
             }
         }
-        public async Task<decimal> GetDividend(int StockID,int Year)
+        public async Task<decimal> 取得個別股票利息(int StockID,int Year)
         {
-            using (var connection = new SqlConnection(_conn))
+            using (var connection = new SqlConnection(_configuration.GetConnectionString("DB")))
             {
                 string query = "SELECT  o.ID, o.StockID,o.Inventory,o.BuyingTime,o.SellingTime,d.CashDividend,d.RecordDate,d.PaymentDay " +
                     "FROM TWOrder o " +
                     "LEFT JOIN TWStockDividendSchedule d ON o.StockID = d.StockID " +
-                    "WHERE o.BuyingTime < d.RecordDate  " +
-                    "AND o.StockID = @StockID " +
+                    "WHERE o.StockID = @StockID  " + 
+                    "AND o.BuyingTime < d.RecordDate " +
                     "AND YEAR(d.RecordDate) = @Year";
                 var parameters = new { StockID, Year };
                 var stocks = await connection.QueryAsync<StockTWDividendData>(query, parameters);

@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using System.Diagnostics;
 using WebStock.Models;
-using WebStock.Models.Interface;
 using WebStock.Service;
 
 namespace WebStock.Controllers
@@ -10,7 +9,7 @@ namespace WebStock.Controllers
     {
         public async Task <IActionResult> Index()
         {
-            var stockTWData = await _stockService.GetStock();
+            var stockTWData = await _stockService.取得所有股票();
 
             return View(stockTWData);
         }
