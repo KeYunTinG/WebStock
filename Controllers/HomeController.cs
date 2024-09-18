@@ -6,26 +6,13 @@ using WebStock.Service;
 
 namespace WebStock.Controllers
 {
-    public class HomeController : Controller
+    public class HomeController(IStockService _stockService) : Controller
     {
-        private readonly ILogger<HomeController> _logger;
-        private readonly IStockService _stockService;
-
-        public HomeController(ILogger<HomeController> logger,IStockService StockService)
-        {
-            _logger = logger;
-            _stockService = StockService;
-        }
         public async Task <IActionResult> Index()
         {
             var stockTWData = await _stockService.GetStock();
 
             return View(stockTWData);
-        }
-
-        public IActionResult Privacy()
-        {
-            return View();
         }
 
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
