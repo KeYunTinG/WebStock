@@ -7,6 +7,8 @@ namespace WebStock.Service
 {
     public class StockService(IConfiguration _configuration, IWebCrawler _webCrawler) : IStockService
     {
+        decimal 股票價值總和 = 0;
+        decimal 利息總和 = 0;
         public async Task<StockTWModel> 取得所有股票()
         {
             using (var connection = new SqlConnection(_configuration.GetConnectionString("DB")))
@@ -14,16 +16,14 @@ namespace WebStock.Service
                 string query = "SELECT tw.ID, tw.Code, tw.Name,twOrder.Inventory, twOrder.BuyingTime, twOrder.SellingTime  FROM TW tw INNER JOIN TWOrder twOrder ON tw.ID = twOrder.StockID";
                 var stocks = await connection.QueryAsync<StockTWData>(query);
                 var stockViewModels = new List<StockTW>();
-                decimal total = 0;
-                decimal dividendTotal = 0;
 
                 foreach (var stock in stocks)
                 {
                     var stockPrice = await _webCrawler.爬取股價(stock.Code);
 
-                    total += stock.Inventory * stockPrice;
+                    股票價值總和 += stock.Inventory * stockPrice;
                     //取得當年度
-                    dividendTotal += await 取得個別股票利息(stock.ID, 2024);
+                    利息總和 += await 取得個別股票利息(stock.ID, 2024);
 
                     stockViewModels.Add(new StockTW
                     {
@@ -40,13 +40,14 @@ namespace WebStock.Service
                 return new StockTWModel
                 {
                     Stocks = stockViewModels,
-                    Total = total,
-                    DividendTotal = dividendTotal
+                    Total = 股票價值總和,
+                    DividendTotal = 利息總和
                 };
             }
         }
         public async Task<decimal> 取得個別股票利息(int StockID,int Year)
         {
+            decimal 利息 = 0;
             using (var connection = new SqlConnection(_configuration.GetConnectionString("DB")))
             {
                 string query = "SELECT  o.ID, o.StockID,o.Inventory,o.BuyingTime,o.SellingTime,d.CashDividend,d.RecordDate,d.PaymentDay " +
@@ -57,14 +58,13 @@ namespace WebStock.Service
                     "AND YEAR(d.RecordDate) = @Year";
                 var parameters = new { StockID, Year };
                 var stocks = await connection.QueryAsync<StockTWDividendData>(query, parameters);
-                decimal total = 0;
 
                 foreach (var stock in stocks)
                 {
-                    total += stock.Inventory * stock.CashDividend;
+                    利息 += stock.Inventory * stock.CashDividend;
                 }
 
-                return total;
+                return 利息;
             }
         }
     }
