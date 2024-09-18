@@ -1,6 +1,8 @@
 ﻿using System.Data.SqlClient;
+using System.Text.RegularExpressions;
 using Dapper;
 using WebStock.Common.InterFace;
+using WebStock.Models;
 using WebStock.Models.Interface;
 
 namespace WebStock.Service
@@ -13,7 +15,11 @@ namespace WebStock.Service
         {
             using (var connection = new SqlConnection(_configuration.GetConnectionString("DB")))
             {
-                string query = "SELECT tw.ID, tw.Code, tw.Name,twOrder.Inventory, twOrder.BuyingTime, twOrder.SellingTime  FROM TW tw INNER JOIN TWOrder twOrder ON tw.ID = twOrder.StockID";
+                string query = "SELECT tw.ID, tw.Code, tw.Name,SUM(twOrder.Inventory) AS Inventory  " +
+                    "FROM TW tw " +
+                    "INNER JOIN TWOrder twOrder " +
+                    "ON tw.ID = twOrder.StockID " +
+                    "GROUP BY  tw.ID, tw.Code, tw.Name";
                 var stocks = await connection.QueryAsync<StockTWData>(query);
                 var stockViewModels = new List<StockTW>();
 
